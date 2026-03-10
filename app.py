@@ -1,8 +1,5 @@
 import streamlit as st
-from google import genai
-from google.genai import types
 import pandas as pd
-import io
 
 st.title("State Subsidy Rate Extractor")
 
@@ -22,6 +19,13 @@ instructions_df = None
 
 if instruction_file:
     instructions_df = pd.read_excel(instruction_file)
+    instructions_df["source_file_clean"] = (
+        instructions_df["source_file"]
+        .astype(str)
+        .str.strip()
+        .str.lower()
+    )
+
     st.success("Instruction file loaded.")
     st.dataframe(instructions_df.head())
 
@@ -34,7 +38,11 @@ if run_extraction and instruction_file and uploaded_files:
     st.subheader("Instruction match check")
 
     for uploaded_file in uploaded_files:
-        matching_rows = instructions_df[instructions_df["source_file"] == uploaded_file.name]
+        uploaded_name_clean = uploaded_file.name.strip().lower()
+
+        matching_rows = instructions_df[
+            instructions_df["source_file_clean"] == uploaded_name_clean
+        ]
 
         st.write(f"PDF: {uploaded_file.name}")
 
@@ -43,3 +51,4 @@ if run_extraction and instruction_file and uploaded_files:
             st.dataframe(matching_rows)
         else:
             st.error("No matching row found in instruction file")
+            st.write(f"Uploaded filename: {uploaded_file.name}")
