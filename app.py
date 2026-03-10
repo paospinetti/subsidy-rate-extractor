@@ -18,6 +18,8 @@ uploaded_files = st.file_uploader(
 
 run_extraction = st.button("Run extraction")
 
+instructions_df = None
+
 if instruction_file:
     instructions_df = pd.read_excel(instruction_file)
     st.success("Instruction file loaded.")
@@ -29,4 +31,15 @@ if uploaded_files:
         st.write(f.name)
 
 if run_extraction and instruction_file and uploaded_files:
-    st.info("Next step will connect instructions to each PDF.")
+    st.subheader("Instruction match check")
+
+    for uploaded_file in uploaded_files:
+        matching_rows = instructions_df[instructions_df["source_file"] == uploaded_file.name]
+
+        st.write(f"PDF: {uploaded_file.name}")
+
+        if not matching_rows.empty:
+            st.success("Match found in instruction file")
+            st.dataframe(matching_rows)
+        else:
+            st.error("No matching row found in instruction file")
