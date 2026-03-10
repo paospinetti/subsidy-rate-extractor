@@ -15,7 +15,18 @@ if uploaded_file is not None:
 
     st.write("Reading document with AI...")
 
-    prompt = """
+prompt = """
+Read this child care subsidy reimbursement rate table.
+Extract the infant full-time center-based monthly reimbursement rate.
+If multiple regions exist, list each separately.
+
+Return the result as CSV with this exact header:
+state,region,provider_type,age_group,attendance_type,rate_unit,amount
+
+Use only information that appears in the document.
+If something is missing, write null.
+Do not include any explanation before or after the CSV.
+"""
     Read this child care subsidy reimbursement rate table.
     Extract the infant full-time center-based monthly reimbursement rate.
     If multiple regions exist, list each separately.
