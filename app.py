@@ -18,6 +18,8 @@ uploaded_files = st.file_uploader(
     accept_multiple_files=True
 )
 
+run_extraction = st.button("Run extraction")
+
 if uploaded_files:
     st.success(f"{len(uploaded_files)} file(s) uploaded.")
 
@@ -30,3 +32,6 @@ if uploaded_files:
     st.subheader("Uploaded Files")
     for uploaded_file in uploaded_files:
         st.write(uploaded_file.name)
+
+if run_extraction:
+    st.info("Extraction button clicked. We will connect this to the AI next.")
