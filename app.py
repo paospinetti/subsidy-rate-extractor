@@ -37,6 +37,8 @@ if run_extraction and uploaded_files:
     api_key = st.secrets["GEMINI_API_KEY"]
     client = genai.Client(api_key=api_key)
 
+    all_dataframes = []
+
     for uploaded_file in uploaded_files:
         st.subheader(f"Processing: {uploaded_file.name}")
 
@@ -97,4 +99,17 @@ Set source_file equal to the uploaded file name.
             ],
         )
 
-        st.text(response.text)
+        csv_text = response.text.strip()
+
+        try:
+            df = pd.read_csv(io.StringIO(csv_text))
+            all_dataframes.append(df)
+            st.dataframe(df)
+        except Exception:
+            st.write(f"Could not turn {uploaded_file.name} into a table.")
+            st.text(csv_text)
+
+    if all_dataframes:
+        combined_df = pd.concat(all_dataframes, ignore_index=True)
+        st.subheader("Combined Results")
+        st.dataframe(combined_df)
