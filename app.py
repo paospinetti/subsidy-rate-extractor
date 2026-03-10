@@ -1,6 +1,8 @@
 import streamlit as st
 from google import genai
 from google.genai import types
+import pandas as pd
+import io
 
 st.title("State Subsidy Rate Extractor")
 st.write("Upload a state reimbursement rate table here.")
@@ -44,10 +46,13 @@ If something is missing, write null.
         ],
     )
 
-st.subheader("Extracted Data")
+    st.subheader("Extracted Data")
 
-csv_text = response.text
-rows = [row.strip() for row in csv_text.split("\n") if row.strip()]
-table_data = [row.split(",") for row in rows]
+    csv_text = response.text.strip()
 
-st.table(table_data)
+    try:
+        df = pd.read_csv(io.StringIO(csv_text))
+        st.dataframe(df)
+    except Exception:
+        st.write("Could not turn the response into a table yet. Here is the raw output:")
+        st.text(csv_text)
