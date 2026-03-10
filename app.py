@@ -28,18 +28,16 @@ if instruction_file:
         .str.strip()
         .str.lower()
     )
-
     st.success("Instruction file loaded.")
-    st.dataframe(instructions_df.head())
 
 if uploaded_files:
     st.success(f"{len(uploaded_files)} PDF file(s) uploaded.")
-    for f in uploaded_files:
-        st.write(f.name)
 
 if run_extraction and instruction_file and uploaded_files:
     api_key = st.secrets["GEMINI_API_KEY"]
     client = genai.Client(api_key=api_key)
+
+    all_dataframes = []
 
     for uploaded_file in uploaded_files:
         uploaded_name_clean = uploaded_file.name.strip().lower()
@@ -48,10 +46,8 @@ if run_extraction and instruction_file and uploaded_files:
             instructions_df["source_file_clean"] == uploaded_name_clean
         ]
 
-        st.subheader(f"Processing: {uploaded_file.name}")
-
         if matching_rows.empty:
-            st.error("No matching row found in instruction file")
+            st.error(f"No instruction row for {uploaded_file.name}")
             continue
 
         row = matching_rows.iloc[0]
@@ -90,7 +86,7 @@ Rules:
 - Only pull full-time care, unless attendance is listed by hour.
 - Use only information shown in the PDF.
 - Do not guess.
-- Do not round numbers. Keep decimal points if shown.
+- Do not round numbers.
 
 Return the result as CSV with this exact header:
 state,matched_region,provider_type,age_group,attendance_type,rate_unit,quality_tier_exact_name,rate_amount,source_file
@@ -113,4 +109,27 @@ Set source_file equal to the uploaded file name.
             ],
         )
 
-        st.text(response.text)
+        csv_text = response.text.strip()
+
+        try:
+            df = pd.read_csv(io.StringIO(csv_text))
+            all_dataframes.append(df)
+        except:
+            st.error(f"Could not parse results from {uploaded_file.name}")
+
+    if all_dataframes:
+        combined_df = pd.concat(all_dataframes, ignore_index=True)
+
+        st.subheader("Combined Results")
+        st.dataframe(combined_df)
+
+        excel_buffer = io.BytesIO()
+        combined_df.to_excel(excel_buffer, index=False)
+        excel_buffer.seek(0)
+
+        st.download_button(
+            label="Download Excel file",
+            data=excel_buffer,
+            file_name="state_subsidy_rates.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
