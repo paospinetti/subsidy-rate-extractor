@@ -44,5 +44,10 @@ If something is missing, write null.
         ],
     )
 
-    st.subheader("Extracted Data")
-    st.write(response.text)
+st.subheader("Extracted Data")
+
+csv_text = response.text
+rows = [row.strip() for row in csv_text.split("\n") if row.strip()]
+table_data = [row.split(",") for row in rows]
+
+st.table(table_data)
