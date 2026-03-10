@@ -1,5 +1,5 @@
 import streamlit as st
-import google.generativeai as genai
+from google import genai
 import tempfile
 import os
 
@@ -12,9 +12,7 @@ if uploaded_file is not None:
     st.success(f"File uploaded: {uploaded_file.name}")
 
     api_key = st.secrets["GEMINI_API_KEY"]
-    genai.configure(api_key=api_key)
-
-    model = genai.GenerativeModel("gemini-1.5-flash")
+    client = genai.Client(api_key=api_key)
 
     st.write("Reading document with AI...")
 
@@ -31,9 +29,12 @@ if uploaded_file is not None:
         tmp_file_path = tmp_file.name
 
     try:
-        gemini_file = genai.upload_file(tmp_file_path)
+        gemini_file = client.files.upload(file=tmp_file_path)
 
-        response = model.generate_content([prompt, gemini_file])
+        response = client.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=[prompt, gemini_file]
+        )
 
         st.subheader("Extracted Data")
         st.write(response.text)
