@@ -1,7 +1,6 @@
 import streamlit as st
 from google import genai
-import tempfile
-import os
+from google.genai import types
 
 st.title("State Subsidy Rate Extractor")
 st.write("Upload a state reimbursement rate table here.")
@@ -22,22 +21,22 @@ if uploaded_file is not None:
     If multiple regions exist, list each separately.
     Return as:
     state | region | provider_type | age_group | attendance_type | rate_unit | amount
+    Use only information that appears in the document.
+    If something is missing, write null.
     """
 
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
-        tmp_file.write(uploaded_file.getbuffer())
-        tmp_file_path = tmp_file.name
+    pdf_bytes = uploaded_file.read()
 
-    try:
-        gemini_file = client.files.upload(file=tmp_file_path)
+    response = client.models.generate_content(
+        model="gemini-3-flash-preview",
+        contents=[
+            types.Part.from_bytes(
+                data=pdf_bytes,
+                mime_type="application/pdf",
+            ),
+            prompt,
+        ],
+    )
 
-        response = client.models.generate_content(
-            model="gemini-2.0-flash",
-            contents=[prompt, gemini_file]
-        )
-
-        st.subheader("Extracted Data")
-        st.write(response.text)
-
-    finally:
-        os.remove(tmp_file_path)
+    st.subheader("Extracted Data")
+    st.write(response.text)
