@@ -1,5 +1,8 @@
 import streamlit as st
+from google import genai
+from google.genai import types
 import pandas as pd
+import io
 
 st.title("State Subsidy Rate Extractor")
 
@@ -35,7 +38,8 @@ if uploaded_files:
         st.write(f.name)
 
 if run_extraction and instruction_file and uploaded_files:
-    st.subheader("Instruction match check")
+    api_key = st.secrets["GEMINI_API_KEY"]
+    client = genai.Client(api_key=api_key)
 
     for uploaded_file in uploaded_files:
         uploaded_name_clean = uploaded_file.name.strip().lower()
@@ -44,11 +48,69 @@ if run_extraction and instruction_file and uploaded_files:
             instructions_df["source_file_clean"] == uploaded_name_clean
         ]
 
-        st.write(f"PDF: {uploaded_file.name}")
+        st.subheader(f"Processing: {uploaded_file.name}")
 
-        if not matching_rows.empty:
-            st.success("Match found in instruction file")
-            st.dataframe(matching_rows)
-        else:
+        if matching_rows.empty:
             st.error("No matching row found in instruction file")
-            st.write(f"Uploaded filename: {uploaded_file.name}")
+            continue
+
+        row = matching_rows.iloc[0]
+
+        prompt = f"""
+Read this child care subsidy reimbursement rate table.
+
+Pull these fields:
+- state
+- matched_region
+- provider_type
+- age_group
+- attendance_type
+- rate_unit
+- quality_tier_exact_name
+- rate_amount
+- source_file
+
+Use these file-specific instructions:
+- Target region: {row['target_region']}
+- Center provider label: {row['center_provider_label']}
+- Home provider label: {row['home_provider_label']}
+- Exclude provider label: {row['exclude_provider_label']}
+- Infant age label: {row['infant_age_label']}
+- Toddler age label: {row['toddler_age_label']}
+- Quality tier label: {row['quality_tier_label']}
+
+Rules:
+- Pull the target region listed above.
+- Pull rows matching the exact provider labels listed above.
+- Do not use the excluded provider label.
+- Use the exact age labels listed above.
+- Use the exact quality tier label listed above.
+- If quality_tier_label is ALL, return all quality tiers for the matching region.
+- Keep the exact wording used in the PDF.
+- Only pull full-time care, unless attendance is listed by hour.
+- Use only information shown in the PDF.
+- Do not guess.
+- Do not round numbers. Keep decimal points if shown.
+
+Return the result as CSV with this exact header:
+state,matched_region,provider_type,age_group,attendance_type,rate_unit,quality_tier_exact_name,rate_amount,source_file
+
+Put each result on its own new line.
+Do not include any explanation before or after the CSV.
+Set source_file equal to the uploaded file name.
+"""
+
+        pdf_bytes = uploaded_file.read()
+
+        response = client.models.generate_content(
+            model="gemini-3-flash-preview",
+            contents=[
+                types.Part.from_bytes(
+                    data=pdf_bytes,
+                    mime_type="application/pdf",
+                ),
+                prompt,
+            ],
+        )
+
+        st.text(response.text)
