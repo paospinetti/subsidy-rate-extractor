@@ -99,7 +99,7 @@ Set source_file equal to the uploaded file name.
         pdf_bytes = uploaded_file.read()
 
         response = client.models.generate_content(
-            model="gemini-3-flash-preview",
+            model="gemini-3.1-flash-lite-preview",
             contents=[
                 types.Part.from_bytes(
                     data=pdf_bytes,
