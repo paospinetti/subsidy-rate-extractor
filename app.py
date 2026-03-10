@@ -1,6 +1,7 @@
 import streamlit as st
-import os
 import google.generativeai as genai
+import tempfile
+import os
 
 st.title("State Subsidy Rate Extractor")
 st.write("Upload a state reimbursement rate table here.")
@@ -10,7 +11,6 @@ uploaded_file = st.file_uploader("Upload a PDF", type=["pdf"])
 if uploaded_file is not None:
     st.success(f"File uploaded: {uploaded_file.name}")
 
-    # Load API key from Streamlit secrets
     api_key = st.secrets["GEMINI_API_KEY"]
     genai.configure(api_key=api_key)
 
@@ -26,10 +26,17 @@ if uploaded_file is not None:
     state | region | provider_type | age_group | attendance_type | rate_unit | amount
     """
 
-    response = model.generate_content([
-        prompt,
-        uploaded_file.getvalue()
-    ])
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
+        tmp_file.write(uploaded_file.getbuffer())
+        tmp_file_path = tmp_file.name
 
-    st.subheader("Extracted Data")
-    st.write(response.text)
+    try:
+        gemini_file = genai.upload_file(tmp_file_path)
+
+        response = model.generate_content([prompt, gemini_file])
+
+        st.subheader("Extracted Data")
+        st.write(response.text)
+
+    finally:
+        os.remove(tmp_file_path)
