@@ -74,6 +74,7 @@ Use these file-specific instructions:
 - Infant age label: {row['infant_age_label']}
 - Toddler age label: {row['toddler_age_label']}
 - Quality tier label: {row['quality_tier_label']}
+- Attendance type: {row['attendance_type']}
 
 Rules:
 - Pull the target region listed above.
@@ -83,7 +84,9 @@ Rules:
 - Use the exact quality tier label listed above.
 - If quality_tier_label is ALL, return all quality tiers for the matching region.
 - Keep the exact wording used in the PDF.
-- Only pull full-time care, unless attendance is listed by hour.
+- Pull only the attendance type listed above.
+- Use the exact attendance wording shown in the PDF when available.
+- If the requested attendance type is not found, return null.
 - Use only information shown in the PDF.
 - Do not guess.
 - Do not round numbers.
