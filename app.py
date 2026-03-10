@@ -18,14 +18,17 @@ if uploaded_file is not None:
     prompt = """
 Read this child care subsidy reimbursement rate table.
 Extract the infant full-time center-based monthly reimbursement rate.
-If multiple regions exist, list each separately.
+If multiple regions or categories exist, list each separately.
 
-Return the result as CSV with this exact header:
+Return the result as CSV with this exact header on the first line:
 state,region,provider_type,age_group,attendance_type,rate_unit,amount
+
+After the header, put each result on its own new line.
+Do not combine multiple rows into one paragraph.
+Do not include bullets, explanations, or extra text.
 
 Use only information that appears in the document.
 If something is missing, write null.
-Do not include any explanation before or after the CSV.
 """
 
     pdf_bytes = uploaded_file.read()
